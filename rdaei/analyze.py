@@ -39,23 +39,21 @@ def add_scores(
     mods: List[int | str]
     oppty_district_count, mods = count_defined_opportunity_districts(votes_by_district)
 
-    mod_scores: Dict[str, float | int] = defaultdict(float)
-    mod_scores["mod_districts"] = int(oppty_district_count)  # TODO - Type is wrong
+    mod_scores: Dict[str, float | int] = dict()
+    mod_scores["mod_districts"] = oppty_district_count
+    mod_averages: Dict[str, float] = defaultdict(float)
     for d in mods:
         i: int = int(d) - 1
-        mod_scores["mod_reock"] += prev_by_district[i]["reock"]
-        mod_scores["mod_polsby_popper"] += prev_by_district[i]["polsby"]
-        mod_scores["mod_spanning_tree_score"] += prev_by_district[i][
+        mod_averages["mod_reock"] += prev_by_district[i]["reock"]
+        mod_averages["mod_polsby_popper"] += prev_by_district[i]["polsby"]
+        mod_averages["mod_spanning_tree_score"] += prev_by_district[i][
             "spanning_tree_score"
         ]
-        mod_scores["mod_district_splitting"] += prev_by_district[i][
+        mod_averages["mod_district_splitting"] += prev_by_district[i][
             "district_splitting"
         ]
-    mod_scores = {
-        k: v / oppty_district_count
-        for k, v in mod_scores.items()
-        if k != "mod_districts"
-    }
+    mod_averages = {k: v / oppty_district_count for k, v in mod_scores.items()}
+    mod_scores.update(mod_averages)
 
     return mod_scores
 

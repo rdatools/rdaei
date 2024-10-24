@@ -1,48 +1,31 @@
 #!/usr/bin/env python3
 
 """
-SCORE AN ENSEMBLE OF MAPS
+COUNT MINORITY OPPORTUNITY DISTRICTS & RELATED SCORES FOR AN ENSEMBLE OF MAPS
 
 For example:
 
-$ scripts/score_ensemble.py \
---state NC \
---plans ../../iCloud/fileout/tradeoffs/NC/ensembles/NC20C_plans.json \
---data ../rdabase/data/NC/NC_2020_data.csv \
---shapes ../rdabase/data/NC/NC_2020_shapes_simplified.json \
---graph ../rdabase/data/NC/NC_2020_graph.json \
---scores ../../iCloud/fileout/tradeoffs/NC/ensembles/NC20C_scores.csv \
---no-debug
-
-$ scripts/score_ensemble.py \
+$ scripts/debug.py \
 --state NC \
 --plans ../../iCloud/fileout/tradeoffs/NC/ensembles/NC20C_plans.json \
 --data ../rdabase/data/NC/NC_2020_data.csv \
 --moredata ../tradeoffs/EI_estimates/NC_2020_est_votes.csv \
 --shapes ../rdabase/data/NC/NC_2020_shapes_simplified.json \
 --graph ../rdabase/data/NC/NC_2020_graph.json \
---scores ../../iCloud/fileout/tradeoffs/NC/ensembles/NC20C_scores.csv \
---no-debug
-
-$ scripts/score_ensemble.py \
---state NC \
---plans testdata/NC20C_plans_SAMPLE.json \
---data ../rdabase/data/NC/NC_2020_data.csv \
---moredata ../tradeoffs/EI_estimates/NC_2020_est_votes.csv \
---shapes ../rdabase/data/NC/NC_2020_shapes_simplified.json \
---graph ../rdabase/data/NC/NC_2020_graph.json \
---scores testdata/NC20C_scores_SAMPLE.csv \
---no-debug
+--scores temp/NC20C_score_WITH_MOD.csv \
+--no-debuG
 
 For documentation, type:
 
-$ scripts/score_ensemble.py -h
+$ scripts/debug.py -h
 
 """
 
 import argparse
 from argparse import ArgumentParser, Namespace
-from typing import Any, List, Dict, Callable
+from typing import Any, List, Dict, Callable, OrderedDict
+
+import random
 
 import warnings
 
@@ -57,12 +40,10 @@ from rdabase import (
     load_shapes,
     load_graph,
     load_metadata,
+    read_csv,
+    Assignment,
 )
-from rdaei import load_EI_votes, InferredVotes, add_scores
-from rdaensemble import (
-    score_ensemble,
-    scores_metadata,
-)
+from rdaei import load_EI_votes, add_scores
 
 
 def main() -> None:
@@ -73,40 +54,42 @@ def main() -> None:
     graph: Dict[str, List[str]] = load_graph(args.graph)
     metadata: Dict[str, Any] = load_metadata(args.state, args.data, args.plantype)
 
-    more_data: Dict[str, Any] = {}
+    more_data: Dict[str, Any] = load_EI_votes(args.moredata)
     more_scores_fn: Callable[..., Dict[str, float | int]] = lambda *args, **kwargs: {}
 
-    ### Add custom scores here ###
-    if args.moredata:
-        more_data = load_EI_votes(args.moredata)
-        more_scores_fn: Callable[..., Dict[str, float | int]] = add_scores
-    ###
+    sample_plan: List[Dict[str, Any]] = read_csv(args.plan, [str, int])
+    assert "GEOID" in sample_plan[0] or "GEOID20" in sample_plan[0]
+    assert "DISTRICT" in sample_plan[0] or "District" in sample_plan[0]
+    geoid_field: str = "GEOID20" if "GEOID20" in sample_plan[0] else "GEOID"
+    district_field: str = "District" if "District" in sample_plan[0] else "DISTRICT"
+    assignments: List[Assignment] = [
+        Assignment(geoid=row[geoid_field], district=row[district_field])
+        for row in sample_plan
+    ]
 
-    # TYPE HINT
-    ensemble: Dict[str, Any] = read_json(args.plans)
-    plans: List[Dict[str, str | float | Dict[str, int | str]]] = ensemble["plans"]
+    N: int = int(metadata["D"])
+    by_district: List[Dict[str, float]] = [
+        {
+            "reock": random.random(),
+            "polsby": random.random(),
+            "spanning_tree_score": random.randint(500, 1000),
+            "district_splitting": random.random() + 1.0,
+        }
+        for _ in range(N)
+    ]
 
-    if "packed" in ensemble and ensemble["packed"] == True:
-        raise Exception(f"Ensemble ({args.plans}) is packed. Unpack it first.")
-
-    scores: List[Dict] = score_ensemble(
-        plans,
+    more_scores: Dict[str, float | int] = add_scores(
+        OrderedDict(),
+        [],
+        assignments,
         data,
         shapes,
         graph,
         metadata,
         more_data=more_data,
-        more_scores_fn=more_scores_fn,
     )
 
-    metadata: Dict[str, Any] = scores_metadata(xx=args.state, plans=args.plans)
-    metadata_path: str = args.scores.replace(".csv", "_metadata.json")
-
-    fields: List[str] = list(scores[0].keys())
-
-    if not args.debug:
-        write_csv(args.scores, scores, fields, precision="{:.4f}")
-        write_json(metadata_path, metadata)
+    print(more_scores)
 
     pass
 
@@ -128,9 +111,9 @@ def parse_args():
         help="The type of districts (congress, upper, lower)",
     )
     parser.add_argument(
-        "--plans",
+        "--plan",
         type=str,
-        help="Ensemble of plans to score in a JSON file",
+        help="The sample plan to score",
     )
     parser.add_argument(
         "--data",
@@ -152,11 +135,6 @@ def parse_args():
         type=str,
         help="Graph file",
     )
-    parser.add_argument(
-        "--scores",
-        type=str,
-        help="Ensemble of resulting scores to a CSV file",
-    )
 
     parser.add_argument(
         "-v", "--verbose", dest="verbose", action="store_true", help="Verbose mode"
@@ -174,12 +152,11 @@ def parse_args():
     debug_defaults: Dict[str, Any] = {
         "state": "NC",
         "plantype": "congress",
-        "plans": "testdata/NC20C_plans_DEBUG_10.json",
+        "plan": "testdata/NC20C_root_map.csv",
         "data": "../rdabase/data/NC/NC_2020_data.csv",
-        "moredata": "../tradeoffs/EI_estimates/NC_2020_est_votes.csv",
         "shapes": "../rdabase/data/NC/NC_2020_shapes_simplified.json",
         "graph": "../rdabase/data/NC/NC_2020_graph.json",
-        "scores": "temp/NC20C_scores_DEBUG_10.csv",
+        "moredata": "data/NC_2020_est_votes.csv",
         "verbose": True,
     }
     args = require_args(args, args.debug, debug_defaults)
