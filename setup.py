@@ -11,7 +11,7 @@ setup(
     author_email="a73cram5ay@gmail.com",
     license="MIT",
     packages=[
-        "rdaeni",
+        "rdaei",
     ],
     install_requires=["rdabase"],
     zip_safe=False,
