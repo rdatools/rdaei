@@ -19,7 +19,6 @@ def add_scores(
     prev_by_district: List[Dict[str, float]],
     ###########################################################################
     assignments: List[Assignment],
-    plans: List[Dict[str, str | float | Dict[str, int | str]]],
     data: Dict[str, Dict[str, int | str]],
     shapes: Dict[str, Any],
     graph: Dict[str, List[str]],
