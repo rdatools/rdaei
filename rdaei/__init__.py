@@ -1,5 +1,6 @@
 # rdaei/__init__.py
 
+from .analyze import add_scores
 from .minority import (
     InferredVotes,
     is_same_candidate_preferred,
