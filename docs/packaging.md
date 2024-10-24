@@ -19,4 +19,4 @@ $ python3 -m twine upload --repository pypi dist/rdaei-x.y.z*.*
 
 where x.y.z is the version number. For example:
 
-$ python3 -m twine upload --repository pypi dist/rdaei-0.2.0*.*
+$ python3 -m twine upload --repository pypi dist/rdaei-0.3.0*.*

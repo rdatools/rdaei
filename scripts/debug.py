@@ -54,6 +54,8 @@ def main() -> None:
     graph: Dict[str, List[str]] = load_graph(args.graph)
     metadata: Dict[str, Any] = load_metadata(args.state, args.data, args.plantype)
 
+    N: int = int(metadata["D"])
+
     more_data: Dict[str, Any] = load_EI_votes(args.moredata)
     more_scores_fn: Callable[..., Dict[str, float | int]] = lambda *args, **kwargs: {}
 
@@ -67,7 +69,8 @@ def main() -> None:
         for row in sample_plan
     ]
 
-    N: int = int(metadata["D"])
+    # Fake up some sample data
+    scores = OrderedDict()
     by_district: List[Dict[str, float]] = [
         {
             "reock": random.random(),
@@ -79,8 +82,8 @@ def main() -> None:
     ]
 
     more_scores: Dict[str, float | int] = add_scores(
-        OrderedDict(),
-        [],
+        scores,
+        by_district,
         assignments,
         data,
         shapes,

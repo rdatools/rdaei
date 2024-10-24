@@ -52,7 +52,7 @@ def add_scores(
         mod_averages["mod_district_splitting"] += prev_by_district[i][
             "district_splitting"
         ]
-    mod_averages = {k: v / oppty_district_count for k, v in mod_scores.items()}
+    mod_averages = {k: v / oppty_district_count for k, v in mod_averages.items()}
     mod_scores.update(mod_averages)
 
     return mod_scores
