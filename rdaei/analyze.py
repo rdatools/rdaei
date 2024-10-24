@@ -14,7 +14,7 @@ from .minority import (
 )
 
 
-def counts_mods(
+def add_scores(
     prev_scores: OrderedDict[str, Any],
     prev_by_district: List[Dict[str, float]],
     ###########################################################################
