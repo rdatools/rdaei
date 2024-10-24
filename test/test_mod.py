@@ -4,7 +4,7 @@
 TEST CALCULATION OF MINORITY OPPORTUNITY DISTRICTS
 """
 
-from rdaensemble.general import (
+from rdaei import (
     InferredVotes,
     is_same_candidate_preferred,
     is_defined_opportunity_district,
